@@ -4,7 +4,7 @@ A lightweight, static web tool for Torn City faction members to quickly check re
 
 ## 🚀 Live Demo
 
-Visit: `https://copycat1337.github.io/tornn_revive_watch/`
+[**Visit Copycat Revive Watch**](https://YOUR-USERNAME.github.io/revive-watch/)
 
 ## ✨ Features
 
