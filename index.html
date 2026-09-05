@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copycat Revive Watch</title>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    }
+
+    body {
+      background-color: #0d0f14;
+      color: #e8edf5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* main container */
+    .app-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.8rem 1.5rem 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    /* header */
+    .header {
+      border-bottom: 1px solid #2a2f3a;
+      padding-bottom: 1.2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.2rem;
+    }
+
+    .header h1 {
+      font-weight: 500;
+      font-size: 2.1rem;
+      letter-spacing: 0.5px;
+      background: linear-gradient(145deg, #d4e0ff, #a0b9ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .header h1 i {
+      -webkit-text-fill-color: #7b93e0;
+      background: none;
+      font-size: 2rem;
+    }
+
+    .header-sub {
+      margin-left: auto;
+      color: #8e98b3;
+      font-size: 0.9rem;
+      background: #1a1e26;
+      padding: 0.3rem 1rem;
+      border-radius: 30px;
+      border: 1px solid #2f3645;
+    }
+
+    /* card / input panel */
+    .card {
+      background: #151b23;
+      border-radius: 24px;
+      padding: 1.8rem 2rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+      border: 1px solid #282f3b;
+      margin-bottom: 2.5rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 1.2rem 1.8rem;
+    }
+
+    .input-field {
+      flex: 1 0 180px;
+      min-width: 150px;
+    }
+
+    .input-field label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #99a4c2;
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    .input-field input {
+      width: 100%;
+      background: #0f131a;
+      border: 1px solid #2c3442;
+      border-radius: 16px;
+      padding: 0.8rem 1.2rem;
+      color: #f0f4ff;
+      font-size: 1rem;
+      transition: 0.2s;
+      outline: none;
+    }
+
+    .input-field input:focus {
+      border-color: #5f7cdf;
+      box-shadow: 0 0 0 3px rgba(79, 114, 226, 0.25);
+      background: #11171f;
+    }
+
+    .input-field input::placeholder {
+      color: #4b5368;
+      font-weight: 300;
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      background: #2f3d6b;
+      border: none;
+      border-radius: 40px;
+      padding: 0.8rem 2.4rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #f0f6ff;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 20, 60, 0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(145deg, #30447a, #1f2b4f);
+      border: 1px solid #4e66a3;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: scale(1.02);
+      background: #3b5090;
+      border-color: #7489dd;
+      box-shadow: 0 6px 16px rgba(60, 100, 220, 0.3);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn i {
+      font-size: 1rem;
+    }
+
+    /* status & results */
+    .status-bar {
+      margin: 1rem 0 0.5rem;
+      min-height: 2.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      color: #b9c4e0;
+    }
+
+    .status-message {
+      background: #1b222c;
+      padding: 0.3rem 1.2rem;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      border-left: 3px solid #4b6bc0;
+    }
+
+    .spinner {
+      display: none;
+      color: #8aa2e6;
+    }
+
+    .spinner i {
+      font-size: 1.3rem;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .result-container {
+      margin-top: 1.2rem;
+      background: #10161e;
+      border-radius: 20px;
+      padding: 1.5rem 0.2rem 0.2rem 0.2rem;
+      border: 1px solid #29303d;
+      overflow-x: auto;
+    }
+
+    .member-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .member-table th {
+      text-align: left;
+      padding: 0.6rem 1rem 0.8rem 1.5rem;
+      color: #9aabcf;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid #28303f;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .member-table td {
+      padding: 0.7rem 1rem 0.7rem 1.5rem;
+      border-bottom: 1px solid #202734;
+      color: #e0e8fa;
+    }
+
+    .member-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .member-table tr:hover td {
+      background: #1b222d;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      background: #2a3345;
+      color: #b0bedd;
+    }
+
+    .badge.revivable {
+      background: #1b4d3b;
+      color: #86dfb2;
+      border: 1px solid #3b8a69;
+      box-shadow: 0 0 6px rgba(70, 200, 140, 0.2);
+    }
+
+    .badge.not-revivable {
+      background: #3d2a32;
+      color: #e9a0b0;
+      border: 1px solid #794a5a;
+    }
+
+    .empty-row td {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: #616c88;
+      font-style: italic;
+    }
+
+    .footer {
+      margin-top: 2.8rem;
+      border-top: 1px solid #232a35;
+      padding: 1.8rem 0 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      color: #6b7897;
+      font-size: 0.9rem;
+    }
+
+    .footer a {
+      color: #8596c0;
+      text-decoration: none;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid #2d3546;
+      padding: 0.3rem 1.2rem;
+      border-radius: 40px;
+      background: #11181f;
+    }
+
+    .footer a:hover {
+      color: #b7ccff;
+      border-color: #4d66a5;
+      background: #1b2330;
+    }
+
+    .footer a i {
+      font-size: 1.2rem;
+    }
+
+    .footer .copy {
+      color: #525f7a;
+      font-size: 0.8rem;
+      align-self: center;
+    }
+
+    /* responsive */
+    @media (max-width: 700px) {
+      .app-wrapper {
+        padding: 1rem 0.8rem;
+      }
+      .header h1 {
+        font-size: 1.5rem;
+      }
+      .card {
+        padding: 1.2rem 1rem;
+      }
+      .input-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn {
+        justify-content: center;
+        padding: 0.8rem 1.2rem;
+      }
+      .member-table th,
+      .member-table td {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      .badge {
+        padding: 0.15rem 0.8rem;
+        font-size: 0.65rem;
+      }
+      .footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+    }
+
+    /* scroll */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #12181f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #38415a;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1>
+      <i class="fas fa-heartbeat"></i> Copycat Revive Watch
+    </h1>
+    <span class="header-sub"><i class="fas fa-shield-alt"></i> Torn · v2</span>
+  </header>
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="input-group">
+      <div class="input-field">
+        <label for="apiKeyInput"><i class="fas fa-key"></i> API Key</label>
+        <input type="text" id="apiKeyInput" placeholder="Your Torn API key" value="cAKpAxPl7EZki4Rs">
+      </div>
+      <div class="input-field">
+        <label for="factionIdInput"><i class="fas fa-users"></i> Faction ID</label>
+        <input type="text" id="factionIdInput" placeholder="Faction ID" value="56333">
+      </div>
+      <button class="btn" id="fetchBtn"><i class="fas fa-sync-alt"></i> Check Revive</button>
+    </div>
+
+    <!-- status -->
+    <div class="status-bar">
+      <span class="status-message" id="statusMsg"><i class="fas fa-info-circle"></i> Enter credentials and fetch</span>
+      <span class="spinner" id="spinner"><i class="fas fa-circle-notch"></i> loading</span>
+    </div>
+
+    <!-- RESULT TABLE -->
+    <div class="result-container" id="resultContainer">
+      <table class="member-table" id="memberTable">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="empty-row">
+            <td colspan="2"><i class="fas fa-user-slash"></i> No data yet — use the form above</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <a href="#" target="_blank" id="githubLink">
+      <i class="fab fa-github"></i> <span>GitHub</span>
+    </a>
+    <span class="copy"><i class="far fa-copyright"></i> Copycat Revive · Torn city</span>
+    <span style="opacity:0.5; font-size:0.8rem;">⚡ static · github pages</span>
+  </footer>
+</div>
+
+<script>
+  (function() {
+    // DOM elements
+    const apiInput = document.getElementById('apiKeyInput');
+    const factionInput = document.getElementById('factionIdInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const spinner = document.getElementById('spinner');
+    const tableBody = document.getElementById('tableBody');
+    const githubLink = document.getElementById('githubLink');
+
+    // set placeholder github url (icon + link)
+    githubLink.href = 'https://github.com/yourusername/revive-watch';  // <-- change to your repo
+    githubLink.querySelector('span').textContent = 'Repository';
+
+    // helper: update table
+    function renderMembers(members) {
+      if (!members || members.length === 0) {
+        tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-users-slash"></i> No members or faction not found</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      for (const m of members) {
+        const name = m.name || 'Unnamed';
+        const isRevivable = m.is_revivable === true;  // api returns boolean
+        const statusClass = isRevivable ? 'revivable' : 'not-revivable';
+        const statusText = isRevivable ? 'REVIVABLE' : 'NOT REVIVABLE';
+        html += `<tr>
+          <td><i class="fas fa-user" style="color:#5f78b0; margin-right:10px;"></i>${escapeHtml(name)}</td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+        </tr>`;
+      }
+      tableBody.innerHTML = html;
+    }
+
+    // simple escape
+    function escapeHtml(text) {
+      if (!text) return '';
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // set status
+    function setStatus(msg, isError = false, isLoading = false) {
+      statusMsg.innerHTML = msg;
+      if (isError) {
+        statusMsg.style.borderLeftColor = '#c75b6b';
+      } else {
+        statusMsg.style.borderLeftColor = '#4b6bc0';
+      }
+      spinner.style.display = isLoading ? 'inline-flex' : 'none';
+    }
+
+    // main fetch
+    async function fetchReviveStatus(apiKey, factionId) {
+      if (!apiKey || apiKey.trim() === '') {
+        setStatus('❌ Please enter a valid API key.', true);
+        return;
+      }
+      if (!factionId || factionId.trim() === '') {
+        setStatus('❌ Please enter a faction ID.', true);
+        return;
+      }
+
+      const cleanKey = apiKey.trim();
+      const cleanFaction = factionId.trim();
+
+      setStatus('⏳ Fetching members...', false, true);
+      tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>`;
+
+      const url = `https://api.torn.com/v2/faction/${cleanFaction}/members`;
+
+      try {
+        const response = await fetch(url + `?key=${cleanKey}&stripTags=true`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+          let errMsg = `HTTP ${response.status}`;
+          try {
+            const errData = await response.json();
+            if (errData && errData.error) errMsg = errData.error;
+          } catch (_) {}
+          setStatus(`⚠️ API error: ${errMsg}`, true);
+          tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(errMsg)}</td></tr>`;
+          return;
+        }
+
+        const data = await response.json();
+
+        // check for api error inside
+        if (data && data.error) {
+          const errMsg = data.error || 'Unknown API error';
+          setStatus(`⚠️ ${errMsg}`, true);
+          tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-exclamation-circle"></i> ${escapeHtml(errMsg)}</td></tr>`;
+          return;
+        }
+
+        // extract members array
+        let members = data?.members || [];
+        if (!Array.isArray(members)) {
+          // sometimes api returns object with members inside?
+          if (members && typeof members === 'object' && !Array.isArray(members)) {
+            // try to convert object values to array
+            const memberList = Object.values(members).filter(v => v && typeof v === 'object');
+            if (memberList.length) members = memberList;
+            else members = [];
+          } else {
+            members = [];
+          }
+        }
+
+        if (members.length === 0) {
+          setStatus('ℹ️ No members returned. Check faction ID or API key permissions.', false);
+          tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-user-minus"></i> No members found</td></tr>`;
+          return;
+        }
+
+        renderMembers(members);
+        setStatus(`✅ ${members.length} member(s) loaded`, false);
+      } catch (err) {
+        console.error(err);
+        setStatus(`❌ Network error: ${err.message || 'unknown'}`, true);
+        tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-wifi-slash"></i> Could not connect to API</td></tr>`;
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+
+    // event listeners
+    fetchBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const apiKey = apiInput.value;
+      const factionId = factionInput.value;
+      fetchReviveStatus(apiKey, factionId);
+    });
+
+    // enter key support
+    function handleEnter(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        fetchBtn.click();
+      }
+    }
+    apiInput.addEventListener('keydown', handleEnter);
+    factionInput.addEventListener('keydown', handleEnter);
+
+    // pre-fill demo values if they are present, but we set from html already.
+    // optionally auto load on first visit? we keep it manual.
+    setStatus('🔍 Enter your API key and faction ID', false);
+
+    // if both fields are not empty, we could auto fetch? but we prefer user action.
+    // (just a small UX: if both have values, show hint)
+    if (apiInput.value && factionInput.value) {
+      setStatus('⚡ Press "Check Revive" to fetch', false);
+    }
+  })();
+</script>
+
+</body>
+</html>
