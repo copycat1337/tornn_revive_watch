@@ -327,16 +327,6 @@
       flex: 2 0 200px;
     }
 
-    .search-row .btn {
-      padding: 0.6rem 1.8rem;
-      background: #253153;
-      border-color: #3f5283;
-    }
-
-    .search-row .btn i {
-      font-size: 0.9rem;
-    }
-
     @media (max-width: 700px) {
       .app-wrapper {
         padding: 1rem 0.8rem;
@@ -418,7 +408,6 @@
         <label for="userSearchInput"><i class="fas fa-user-search"></i> Or search by User ID</label>
         <input type="text" id="userSearchInput" placeholder="e.g. 123456">
       </div>
-      <button class="btn" id="searchUserBtn"><i class="fas fa-user"></i> Lookup User</button>
       <button class="btn" id="clearSearchBtn" style="background:#2d3345; border-color:#4a526b;"><i class="fas fa-times"></i> Clear</button>
     </div>
 
@@ -468,7 +457,6 @@
     const factionInput = document.getElementById('factionIdInput');
     const fetchBtn = document.getElementById('fetchBtn');
     const userSearchInput = document.getElementById('userSearchInput');
-    const searchUserBtn = document.getElementById('searchUserBtn');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const statusMsg = document.getElementById('statusMsg');
     const spinner = document.getElementById('spinner');
@@ -572,7 +560,6 @@
       setStatus('⏳ Fetching user...', false, true);
       tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>`;
 
-      // Use the v2/user endpoint
       const url = `https://api.torn.com/v2/user/${userId.trim()}`;
 
       try {
@@ -599,16 +586,17 @@
         // The v2/user endpoint returns the user object directly
         if (data && data.id) {
           // Check if the user is revivable (in hospital)
-          // The API might not have is_revivable directly, we check status
           let isRevivable = false;
+          
+          // Check status field
           if (data.status && data.status.state === 'Hospital') {
             isRevivable = true;
           }
-          // Also check if the user is in hospital via the "hospital" field
+          // Check hospital field (sometimes contains time in hospital)
           if (data.hospital && data.hospital !== null && data.hospital !== 0) {
             isRevivable = true;
           }
-          // Some versions have is_revivable
+          // Check if is_revivable is directly provided
           if (data.is_revivable !== undefined) {
             isRevivable = data.is_revivable === true;
           }
@@ -680,28 +668,12 @@
       handleFetch();
     });
 
-    searchUserBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (userSearchInput.value.trim()) {
-        handleFetch(); // will prioritize user ID
-      } else {
-        setStatus('ℹ️ Enter a User ID to lookup.', false);
-      }
-    });
-
     clearSearchBtn.addEventListener('click', function(e) {
       e.preventDefault();
       clearAll();
     });
 
-    // enter key support
-    userSearchInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        searchUserBtn.click();
-      }
-    });
-
+    // enter key support for all inputs
     function handleEnter(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -710,11 +682,12 @@
     }
     apiInput.addEventListener('keydown', handleEnter);
     factionInput.addEventListener('keydown', handleEnter);
+    userSearchInput.addEventListener('keydown', handleEnter);
 
     // initial status
     setStatus('🔍 Enter API key, then faction or user ID', false);
     if (apiInput.value) {
-      setStatus('⚡ Enter faction ID or user ID and press "Check Revive" or "Lookup User"', false);
+      setStatus('⚡ Enter faction ID or user ID and press "Check Revive"', false);
     }
   })();
 </script>
