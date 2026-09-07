@@ -22,7 +22,6 @@
       flex-direction: column;
     }
 
-    /* main container */
     .app-wrapper {
       max-width: 1100px;
       margin: 0 auto;
@@ -33,7 +32,6 @@
       width: 100%;
     }
 
-    /* header */
     .header {
       border-bottom: 1px solid #2a2f3a;
       padding-bottom: 1.2rem;
@@ -73,7 +71,6 @@
       border: 1px solid #2f3645;
     }
 
-    /* card / input panel */
     .card {
       background: #151b23;
       border-radius: 24px;
@@ -91,8 +88,8 @@
     }
 
     .input-field {
-      flex: 1 0 180px;
-      min-width: 150px;
+      flex: 1 0 160px;
+      min-width: 140px;
     }
 
     .input-field label {
@@ -164,7 +161,6 @@
       font-size: 1rem;
     }
 
-    /* status & results */
     .status-bar {
       margin: 1rem 0 0.5rem;
       min-height: 2.2rem;
@@ -311,7 +307,12 @@
       align-self: center;
     }
 
-    /* responsive */
+    .footer .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
     @media (max-width: 700px) {
       .app-wrapper {
         padding: 1rem 0.8rem;
@@ -344,9 +345,11 @@
         align-items: center;
         text-align: center;
       }
+      .footer .links {
+        justify-content: center;
+      }
     }
 
-    /* scroll */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -357,6 +360,31 @@
     ::-webkit-scrollbar-thumb {
       background: #38415a;
       border-radius: 10px;
+    }
+
+    /* small search row */
+    .search-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.8rem 1.5rem;
+      margin-top: 1.2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid #232b38;
+    }
+
+    .search-row .input-field {
+      flex: 2 0 200px;
+    }
+
+    .search-row .btn {
+      padding: 0.6rem 1.8rem;
+      background: #253153;
+      border-color: #3f5283;
+    }
+
+    .search-row .btn i {
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -385,6 +413,16 @@
       <button class="btn" id="fetchBtn"><i class="fas fa-sync-alt"></i> Check Revive</button>
     </div>
 
+    <!-- search by user -->
+    <div class="search-row">
+      <div class="input-field">
+        <label for="userSearchInput"><i class="fas fa-user-search"></i> Search member (name or ID)</label>
+        <input type="text" id="userSearchInput" placeholder="e.g. JohnDoe or 123456">
+      </div>
+      <button class="btn" id="searchUserBtn"><i class="fas fa-filter"></i> Filter</button>
+      <button class="btn" id="clearSearchBtn" style="background:#2d3345; border-color:#4a526b;"><i class="fas fa-times"></i> Clear</button>
+    </div>
+
     <!-- status -->
     <div class="status-bar">
       <span class="status-message" id="statusMsg"><i class="fas fa-info-circle"></i> Enter credentials and fetch</span>
@@ -411,9 +449,14 @@
 
   <!-- FOOTER -->
   <footer class="footer">
-    <a href="#" target="_blank" id="githubLink">
-      <i class="fab fa-github"></i> <span>GitHub</span>
-    </a>
+    <div class="links">
+      <a href="#" target="_blank" id="githubLink">
+        <i class="fab fa-github"></i> <span>Repository</span>
+      </a>
+      <a href="https://www.torn.com/profiles.php?XID=4039125" target="_blank" id="tornProfileLink">
+        <i class="fas fa-user-circle"></i> <span>c0pyc4t</span>
+      </a>
+    </div>
     <span class="copy"><i class="far fa-copyright"></i> c0pyc4t 56333 Revive · Torn city</span>
     <span style="opacity:0.5; font-size:0.8rem;">⚡ static · github pages</span>
   </footer>
@@ -425,37 +468,57 @@
     const apiInput = document.getElementById('apiKeyInput');
     const factionInput = document.getElementById('factionIdInput');
     const fetchBtn = document.getElementById('fetchBtn');
+    const userSearchInput = document.getElementById('userSearchInput');
+    const searchUserBtn = document.getElementById('searchUserBtn');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
     const statusMsg = document.getElementById('statusMsg');
     const spinner = document.getElementById('spinner');
     const tableBody = document.getElementById('tableBody');
     const githubLink = document.getElementById('githubLink');
 
-    // set placeholder github url (icon + link)
-    githubLink.href = 'https://github.com/copycat1337/tornn_revive_watch';  // <-- change to your repo
-    githubLink.querySelector('span').textContent = 'Repository';
+    // set repo link
+    githubLink.href = 'https://github.com/copycat1337/tornn_revive_watch';
 
-    // helper: update table
-    function renderMembers(members) {
+    // store last fetched members
+    let lastMembers = [];
+
+    // helper: render table (with optional filter)
+    function renderMembers(members, filterText = '') {
       if (!members || members.length === 0) {
         tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-users-slash"></i> No members or faction not found</td></tr>`;
         return;
       }
 
+      let filtered = members;
+      if (filterText.trim() !== '') {
+        const lower = filterText.trim().toLowerCase();
+        filtered = members.filter(m => {
+          const name = (m.name || '').toLowerCase();
+          const id = String(m.id || '');
+          return name.includes(lower) || id.includes(lower);
+        });
+      }
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-user-slash"></i> No member matches "${escapeHtml(filterText)}"</td></tr>`;
+        return;
+      }
+
       let html = '';
-      for (const m of members) {
+      for (const m of filtered) {
         const name = m.name || 'Unnamed';
-        const isRevivable = m.is_revivable === true;  // api returns boolean
+        const isRevivable = m.is_revivable === true;
         const statusClass = isRevivable ? 'revivable' : 'not-revivable';
         const statusText = isRevivable ? 'REVIVABLE' : 'NOT REVIVABLE';
+        const idDisplay = m.id ? `#${m.id}` : '';
         html += `<tr>
-          <td><i class="fas fa-user" style="color:#5f78b0; margin-right:10px;"></i>${escapeHtml(name)}</td>
+          <td><i class="fas fa-user" style="color:#5f78b0; margin-right:10px;"></i>${escapeHtml(name)} <span style="color:#6a7a9a; font-size:0.75rem; margin-left:6px;">${escapeHtml(idDisplay)}</span></td>
           <td><span class="badge ${statusClass}">${statusText}</span></td>
         </tr>`;
       }
       tableBody.innerHTML = html;
     }
 
-    // simple escape
     function escapeHtml(text) {
       if (!text) return '';
       const map = {
@@ -465,10 +528,9 @@
         '"': '&quot;',
         "'": '&#039;'
       };
-      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+      return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
-    // set status
     function setStatus(msg, isError = false, isLoading = false) {
       statusMsg.innerHTML = msg;
       if (isError) {
@@ -517,7 +579,6 @@
 
         const data = await response.json();
 
-        // check for api error inside
         if (data && data.error) {
           const errMsg = data.error || 'Unknown API error';
           setStatus(`⚠️ ${errMsg}`, true);
@@ -525,12 +586,9 @@
           return;
         }
 
-        // extract members array
         let members = data?.members || [];
         if (!Array.isArray(members)) {
-          // sometimes api returns object with members inside?
           if (members && typeof members === 'object' && !Array.isArray(members)) {
-            // try to convert object values to array
             const memberList = Object.values(members).filter(v => v && typeof v === 'object');
             if (memberList.length) members = memberList;
             else members = [];
@@ -539,13 +597,18 @@
           }
         }
 
+        // store for filtering
+        lastMembers = members;
+
         if (members.length === 0) {
           setStatus('ℹ️ No members returned. Check faction ID or API key permissions.', false);
           tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-user-minus"></i> No members found</td></tr>`;
           return;
         }
 
-        renderMembers(members);
+        // apply current search filter if any
+        const filter = userSearchInput.value;
+        renderMembers(members, filter);
         setStatus(`✅ ${members.length} member(s) loaded`, false);
       } catch (err) {
         console.error(err);
@@ -553,6 +616,28 @@
         tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-wifi-slash"></i> Could not connect to API</td></tr>`;
       } finally {
         spinner.style.display = 'none';
+      }
+    }
+
+    // filter handler
+    function applyFilter() {
+      if (lastMembers.length === 0) {
+        setStatus('ℹ️ No data to filter. Fetch members first.', false);
+        return;
+      }
+      const filter = userSearchInput.value;
+      renderMembers(lastMembers, filter);
+      setStatus(`🔍 Filtered ${lastMembers.length} members`, false);
+    }
+
+    function clearFilter() {
+      userSearchInput.value = '';
+      if (lastMembers.length > 0) {
+        renderMembers(lastMembers, '');
+        setStatus(`✅ ${lastMembers.length} members shown`, false);
+      } else {
+        tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-users-slash"></i> No data</td></tr>`;
+        setStatus('🔍 Enter credentials and fetch', false);
       }
     }
 
@@ -564,7 +649,25 @@
       fetchReviveStatus(apiKey, factionId);
     });
 
-    // enter key support
+    searchUserBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      applyFilter();
+    });
+
+    clearSearchBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearFilter();
+    });
+
+    // enter key support for search
+    userSearchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchUserBtn.click();
+      }
+    });
+
+    // enter key for main inputs
     function handleEnter(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -574,15 +677,13 @@
     apiInput.addEventListener('keydown', handleEnter);
     factionInput.addEventListener('keydown', handleEnter);
 
-    // pre-fill demo values if they are present, but we set from html already.
-    // optionally auto load on first visit? we keep it manual.
+    // initial status
     setStatus('🔍 Enter your API key and faction ID', false);
-
-    // if both fields are not empty, we could auto fetch? but we prefer user action.
-    // (just a small UX: if both have values, show hint)
     if (apiInput.value && factionInput.value) {
       setStatus('⚡ Press "Check Revive" to fetch', false);
     }
+
+    // torn profile link is hardcoded in footer
   })();
 </script>
 
