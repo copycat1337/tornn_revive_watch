@@ -415,7 +415,7 @@
     <!-- search by user (independent) -->
     <div class="search-row">
       <div class="input-field">
-        <label for="userSearchInput"><i class="fas fa-user-search"></i> Search by User ID (no faction needed)</label>
+        <label for="userSearchInput"><i class="fas fa-user-search"></i> Or search by User ID</label>
         <input type="text" id="userSearchInput" placeholder="e.g. 123456">
       </div>
       <button class="btn" id="searchUserBtn"><i class="fas fa-user"></i> Lookup User</button>
@@ -477,8 +477,6 @@
 
     githubLink.href = 'https://github.com/copycat1337/tornn_revive_watch';
 
-    let lastMembers = [];
-
     // helpers
     function escapeHtml(text) {
       if (!text) return '';
@@ -498,29 +496,14 @@
       spinner.style.display = isLoading ? 'inline-flex' : 'none';
     }
 
-    function renderMembers(members, filterText = '') {
+    function renderMembers(members) {
       if (!members || members.length === 0) {
         tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-users-slash"></i> No members found</td></tr>`;
         return;
       }
 
-      let filtered = members;
-      if (filterText.trim() !== '') {
-        const lower = filterText.trim().toLowerCase();
-        filtered = members.filter(m => {
-          const name = (m.name || '').toLowerCase();
-          const id = String(m.id || '');
-          return name.includes(lower) || id.includes(lower);
-        });
-      }
-
-      if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-user-slash"></i> No match for "${escapeHtml(filterText)}"</td></tr>`;
-        return;
-      }
-
       let html = '';
-      for (const m of filtered) {
+      for (const m of members) {
         const name = m.name || 'Unnamed';
         const isRevivable = m.is_revivable === true;
         const statusClass = isRevivable ? 'revivable' : 'not-revivable';
@@ -589,10 +572,11 @@
       setStatus('⏳ Fetching user...', false, true);
       tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>`;
 
+      // Use the v2/user endpoint
       const url = `https://api.torn.com/v2/user/${userId.trim()}`;
 
       try {
-        const response = await fetch(url + `?key=${apiKey.trim()}&stripTags=true`, {
+        const response = await fetch(url + `?key=${apiKey.trim()}&stripTags=true&selections=profile,basic`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
@@ -612,15 +596,27 @@
           return null;
         }
 
-        // data is a single user object
+        // The v2/user endpoint returns the user object directly
         if (data && data.id) {
-          // check if revivable: the API returns "is_revivable" on user endpoint as well? 
-          // We'll compute from status if possible, but the v2/user endpoint might not have it directly.
-          // We'll use the "status" field if available, but fallback to false.
+          // Check if the user is revivable (in hospital)
+          // The API might not have is_revivable directly, we check status
+          let isRevivable = false;
+          if (data.status && data.status.state === 'Hospital') {
+            isRevivable = true;
+          }
+          // Also check if the user is in hospital via the "hospital" field
+          if (data.hospital && data.hospital !== null && data.hospital !== 0) {
+            isRevivable = true;
+          }
+          // Some versions have is_revivable
+          if (data.is_revivable !== undefined) {
+            isRevivable = data.is_revivable === true;
+          }
+
           const user = {
             id: data.id,
             name: data.name || 'Unnamed',
-            is_revivable: data.is_revivable === true || data.status?.state === 'Hospital' || false
+            is_revivable: isRevivable
           };
           return [user];
         } else {
@@ -652,8 +648,7 @@
       if (userId.trim()) {
         const result = await fetchUser(apiKey, userId);
         if (result) {
-          lastMembers = result;
-          renderMembers(result, '');
+          renderMembers(result);
           setStatus(`✅ ${result.length} user(s) loaded`, false);
         }
         return;
@@ -667,27 +662,14 @@
 
       const result = await fetchFaction(apiKey, factionId);
       if (result) {
-        lastMembers = result;
-        renderMembers(result, '');
+        renderMembers(result);
         setStatus(`✅ ${result.length} member(s) loaded`, false);
       }
-    }
-
-    // filter (client-side)
-    function applyFilter() {
-      if (lastMembers.length === 0) {
-        setStatus('ℹ️ No data to filter. Fetch first.', false);
-        return;
-      }
-      const filter = userSearchInput.value;
-      renderMembers(lastMembers, filter);
-      setStatus(`🔍 Filtered ${lastMembers.length} members`, false);
     }
 
     function clearAll() {
       userSearchInput.value = '';
       factionInput.value = '';
-      lastMembers = [];
       tableBody.innerHTML = `<tr class="empty-row"><td colspan="2"><i class="fas fa-users-slash"></i> No data</td></tr>`;
       setStatus('🔍 Enter API key, then faction or user ID', false);
     }
@@ -700,7 +682,6 @@
 
     searchUserBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      // if userSearchInput has value, directly fetch that user (no faction needed)
       if (userSearchInput.value.trim()) {
         handleFetch(); // will prioritize user ID
       } else {
