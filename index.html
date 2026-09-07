@@ -393,7 +393,7 @@
     <div class="input-group">
       <div class="input-field">
         <label for="apiKeyInput"><i class="fas fa-key"></i> API Key</label>
-        <input type="text" id="apiKeyInput" placeholder="Your Torn API key" value="000000">
+        <input type="text" id="apiKeyInput" placeholder="Your Torn API key" value="5iarXEFK6EILPOMj">
       </div>
       <div class="input-field">
         <label for="factionIdInput"><i class="fas fa-users"></i> Faction ID</label>
@@ -406,7 +406,7 @@
     <div class="search-row">
       <div class="input-field">
         <label for="userSearchInput"><i class="fas fa-user-search"></i> Or search by User ID</label>
-        <input type="text" id="userSearchInput" placeholder="e.g. 123456">
+        <input type="text" id="userSearchInput" placeholder="e.g. 3776251" value="3776251">
       </div>
       <button class="btn" id="clearSearchBtn" style="background:#2d3345; border-color:#4a526b;"><i class="fas fa-times"></i> Clear</button>
     </div>
@@ -552,7 +552,7 @@
       }
     }
 
-    // ----- fetch single user (by ID) -----
+    // ----- fetch single user (by ID) - FIXED to match the Python script output -----
     async function fetchUser(apiKey, userId) {
       if (!apiKey.trim()) { setStatus('❌ API key required.', true); return null; }
       if (!userId.trim()) { setStatus('❌ User ID required.', true); return null; }
@@ -563,7 +563,7 @@
       const url = `https://api.torn.com/v2/user/${userId.trim()}`;
 
       try {
-        const response = await fetch(url + `?key=${apiKey.trim()}&stripTags=true&selections=profile,basic`, {
+        const response = await fetch(url + `?key=${apiKey.trim()}&stripTags=true`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
@@ -583,24 +583,47 @@
           return null;
         }
 
-        // The v2/user endpoint returns the user object directly
-        if (data && data.id) {
-          // Check if the user is revivable (in hospital)
+        // Check if we have a valid user object
+        if (data && data.profile && data.profile.id) {
+          // Get revivable status from the profile or top level
           let isRevivable = false;
           
-          // Check status field
+          // Check various places where revivable status might be
+          if (data.profile.revivable !== undefined) {
+            isRevivable = data.profile.revivable === true;
+          } else if (data.revivable !== undefined) {
+            isRevivable = data.revivable === true;
+          }
+          
+          // Also check if user is in hospital via status
+          if (data.profile && data.profile.status && data.profile.status.state === 'Hospital') {
+            isRevivable = true;
+          }
+          
+          // Check if there's a life field with current/maximum and they're in hospital
+          if (data.profile && data.profile.life) {
+            // If they have life data and status is Hospital, they're revivable
+            if (data.profile.status && data.profile.status.state === 'Hospital') {
+              isRevivable = true;
+            }
+          }
+
+          const user = {
+            id: data.profile.id,
+            name: data.profile.name || 'Unnamed',
+            is_revivable: isRevivable
+          };
+          return [user];
+        } else if (data && data.id) {
+          // Fallback: if the data is at the top level (some API versions)
+          let isRevivable = false;
+          if (data.revivable !== undefined) {
+            isRevivable = data.revivable === true;
+          }
           if (data.status && data.status.state === 'Hospital') {
             isRevivable = true;
           }
-          // Check hospital field (sometimes contains time in hospital)
-          if (data.hospital && data.hospital !== null && data.hospital !== 0) {
-            isRevivable = true;
-          }
-          // Check if is_revivable is directly provided
-          if (data.is_revivable !== undefined) {
-            isRevivable = data.is_revivable === true;
-          }
-
+          
           const user = {
             id: data.id,
             name: data.name || 'Unnamed',
